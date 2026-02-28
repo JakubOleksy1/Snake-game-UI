@@ -29,7 +29,7 @@ typedef struct {
 } Food;
 
 typedef struct {
-    int mapField[MAP_SIZE_X][MAP_SIZE_Y];
+    int mapField[MAP_SIZE_Y][MAP_SIZE_X];
 } Map;
 
 void clearScreen() {
@@ -53,19 +53,19 @@ static inline void moveSnake(Snake *snake) {
         snake->body[i] = snake->body[i - 1];
     }
     
-    if(snake->direction == 0) { snake->body[0].coord_y++; }
-    if(snake->direction == 1) { snake->body[0].coord_x++; }
-    if(snake->direction == 2) { snake->body[0].coord_y--; }
-    if(snake->direction == 3) { snake->body[0].coord_x--; }
+    if(snake->direction == 0) { snake->body[0].coord_x++; }
+    if(snake->direction == 1) { snake->body[0].coord_y++; }
+    if(snake->direction == 2) { snake->body[0].coord_x--; }
+    if(snake->direction == 3) { snake->body[0].coord_y--; }
 }
 
 static inline void createMap(Map *map) {
-    for (int i = 0; i < MAP_SIZE_X; i++) {
-        for (int j = 0; j < MAP_SIZE_Y; j++) {
+    for (int i = 0; i < MAP_SIZE_Y; i++) {
+        for (int j = 0; j < MAP_SIZE_X; j++) {
             if ((i == 0) || 
                 (j == 0) || 
-                (i == (MAP_SIZE_X - 1)) || 
-                (j == (MAP_SIZE_Y - 1)) )
+                (i == (MAP_SIZE_Y - 1)) || 
+                (j == (MAP_SIZE_X - 1)) )
             {
                 map->mapField[i][j] = 1;
             } 
@@ -78,19 +78,19 @@ static inline void createMap(Map *map) {
 }
 
 static inline void draw(const Map *map, const Snake *snake, const Food *food) {  
-    for (int i = 0; i < MAP_SIZE_X; i++) {
-        for (int j = 0; j < MAP_SIZE_Y; j++) {
+    for (int i = 0; i < MAP_SIZE_Y; i++) {
+        for (int j = 0; j < MAP_SIZE_X; j++) {
             bool printed = false;
             
             for (int k = 0; k < snake->length; k++) {
-                if(i == snake->body[k].coord_x && j == snake->body[k].coord_y) {
+                if(i == snake->body[k].coord_y && j == snake->body[k].coord_x) {
                     printf("%d", 3);
                     printed = true;
                     break;
                 }
             }
             
-            if(!printed && i == food->coord_x && j == food->coord_y) {
+            if(!printed && i == food->coord_y && j == food->coord_x) {
                 printf("%d",4);
                 printed = true;
             }
@@ -112,18 +112,19 @@ static inline void checkRules(const Map *map, const Snake *snake, Food *food, bo
         *gameOver = true;
     }
     //rule 2 snake hits itself
-    for(int i = snake->length - 1; i > 0; i--) {
-        if(snake->body[0] == snake->body[i - 1]) {
+    for(int i = 1; i < snake->length; i++) {
+        if(snake->body[0].coord_x == snake->body[i].coord_x && snake->body[0].coord_y == snake->body[i].coord_y) {
             *gameOver = true;
         }
     }
+
     //food is eaten 
     if((snake->body->coord_x == food->coord_x) && (snake->body->coord_y == food->coord_y)) {
         food->is_eaten = true;
         (*points)++;
     }
     //max points achieved - player won
-    if((*points) == ((MAP_SIZE_X - 2) * (MAP_SIZE_Y - 2))) {
+    if((*points) == ((MAP_SIZE_Y - 2) * (MAP_SIZE_X - 2))) {
         printf("You won!");
         *gameOver = true;
     }
@@ -138,7 +139,7 @@ int main() {
     
     Snake snake;   
     snake.length = 3;
-    snake.capacity = (MAP_SIZE_X - 2) * (MAP_SIZE_Y - 2);
+    snake.capacity = (MAP_SIZE_Y - 2) * (MAP_SIZE_X - 2);
     snake.direction = 3;
     snake.body = (Snake_coord *)malloc(snake.capacity * sizeof(Snake_coord));
     for(int i = 0; i < snake.length; i++) {
@@ -161,6 +162,7 @@ int main() {
         clearScreen();
         draw(&map, &snake, &food);
         
+        // inside your game loop, before moveSnake(&snake);
         if (_kbhit()) {
             int c = _getch();
             if (c == 0 || c == 0xE0) {         // arrow key prefix
