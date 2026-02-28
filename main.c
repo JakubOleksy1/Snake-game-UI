@@ -41,9 +41,21 @@ void clearScreen() {
 static inline void spawnFood(Food *food, Snake *snake) {
     if (food->is_eaten == true) 
     {
-        snake->length++;
-        food->coord_x = (rand() % 19) + 1;
-        food->coord_y = (rand() % 19) + 1;
+        bool confirmSpawn = false;
+        while(confirmSpawn == false) {
+        food->coord_x = (rand() % (MAP_SIZE_X-2)) + 1;
+        food->coord_y = (rand() % (MAP_SIZE_Y-2)) + 1;
+        bool collision = false;
+            for(int i = 0; i < snake->length; i++) {
+                if(food->coord_x == snake->body[i].coord_x && food->coord_y == snake->body[i].coord_y) {
+                    collision = true;
+                    break;
+                }
+            }
+            if(collision == false) {
+                confirmSpawn = true;
+            }
+        }
         food->is_eaten = false;
     }
 }
@@ -104,7 +116,7 @@ static inline void draw(const Map *map, const Snake *snake, const Food *food) {
     }
 }
 
-static inline void checkRules(const Map *map, const Snake *snake, Food *food, bool *gameOver, int *points) {
+static inline void checkRules(const Map *map, Snake *snake, Food *food, bool *gameOver, int *points) {
     //rule 1 wall collision
     if( (snake->body[0].coord_x == 0 || snake->body[0].coord_x == MAP_SIZE_X - 1) ||
         (snake->body[0].coord_y == 0 || snake->body[0].coord_y == MAP_SIZE_Y - 1) )
@@ -122,6 +134,8 @@ static inline void checkRules(const Map *map, const Snake *snake, Food *food, bo
     if((snake->body->coord_x == food->coord_x) && (snake->body->coord_y == food->coord_y)) {
         food->is_eaten = true;
         (*points)++;
+        snake->length++;
+        
     }
     //max points achieved - player won
     if((*points) == ((MAP_SIZE_Y - 2) * (MAP_SIZE_X - 2))) {
@@ -162,7 +176,6 @@ int main() {
         clearScreen();
         draw(&map, &snake, &food);
         
-        // inside your game loop, before moveSnake(&snake);
         if (_kbhit()) {
             int c = _getch();
             if (c == 0 || c == 0xE0) {         // arrow key prefix
