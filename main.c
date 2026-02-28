@@ -1,4 +1,3 @@
-po zjedzeniu 5 owocow gra sie zatrzymala game overem
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
