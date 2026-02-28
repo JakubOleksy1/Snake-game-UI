@@ -99,6 +99,7 @@ static inline void moveSnake(Snake *snake) {
     if(snake->growPending == true && snake->length < snake->capacity) {
         snake->length++;
         snake->growPending = false;
+        snake->body[snake->length - 1] = snake->body[snake->length - 2];
     }
 }
 
@@ -132,7 +133,7 @@ static inline void draw(const char (*map)[MAP_SIZE_X], const Snake *snake, const
     for (int k = 0; k < snake->length; k++) {
             screen[snake->body[k].coord_y][snake->body[k].coord_x] = TILE_SNAKE;
     }
-    
+
     screen[food->coord_y][food->coord_x] = TILE_FOOD;
 
     for (int i = 0; i < MAP_SIZE_Y; i++) {
@@ -141,30 +142,6 @@ static inline void draw(const char (*map)[MAP_SIZE_X], const Snake *snake, const
         }
         printf("\n");
     }
-    // for (int i = 0; i < MAP_SIZE_Y; i++) {
-    //     for (int j = 0; j < MAP_SIZE_X; j++) {
-    //         bool printed = false;
-            
-    //         for (int k = 0; k < snake->length; k++) {
-    //             if(i == snake->body[k].coord_y && j == snake->body[k].coord_x) {
-    //                 printf("%c", TILE_SNAKE);
-    //                 printed = true;
-    //                 break;
-    //             }
-    //         }
-            
-    //         if(!printed && i == food->coord_y && j == food->coord_x) {
-    //             printf("%c", TILE_FOOD);
-    //             printed = true;
-    //         }
-            
-    //         if(!printed)
-    //         {
-    //             printf("%c", map[i][j]);
-    //         }
-    //     }
-    //     printf("\n");
-    // }
 }
 
 static inline void checkRules(Snake *snake, Food *food, GameState *state, int *points) {
