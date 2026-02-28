@@ -1,3 +1,4 @@
+po zjedzeniu 5 owocow gra sie zatrzymala game overem
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -7,9 +8,14 @@
 
 #define MAP_SIZE_X 21
 #define MAP_SIZE_Y 21
+
 #define STARTING_LENGTH 3
-#define TILE_SNAKE 3
-#define TILE_FOOD 4
+
+#define TILE_WALL '#'
+#define TILE_EMPTY ' '
+#define TILE_SNAKE 'O'
+#define TILE_FOOD '*'
+
 
 typedef enum {
     MENU,
@@ -34,6 +40,7 @@ typedef struct {
     int length;
     int capacity;
     Direction direction;
+    Direction nextDirection;
     bool growPending;
     Snake_coord *body;
 } Snake;
@@ -50,7 +57,7 @@ void clearScreen() {
     SetConsoleCursorPosition(hStdOut, cursorPosition);
 }
 
-static inline void spawnFood(Food *food, const Snake *snake) {
+static inline void spawnFood(Food *food, const Snake *snake, GameState *state) {
     if (food->is_eaten == true && snake->length < ((MAP_SIZE_Y - 2) * (MAP_SIZE_X - 2))) 
     {   
         int attempts = 0;
@@ -72,10 +79,15 @@ static inline void spawnFood(Food *food, const Snake *snake) {
                 }
             attempts++;
         }
+        if(!confirmSpawn) {
+            *state = GAMEOVER;
+        }
     }
 }
 
 static inline void moveSnake(Snake *snake) {
+    snake->direction = snake->nextDirection;
+
     for(int i = snake->length - 1; i > 0; i--) {
         snake->body[i] = snake->body[i - 1];
     }
@@ -91,7 +103,7 @@ static inline void moveSnake(Snake *snake) {
     }
 }
 
-static inline void createMap(int (*map)[MAP_SIZE_X]) {
+static inline void createMap(char (*map)[MAP_SIZE_X]) {
     for (int i = 0; i < MAP_SIZE_Y; i++) {
         for (int j = 0; j < MAP_SIZE_X; j++) {
             if ((i == 0) || 
@@ -99,41 +111,61 @@ static inline void createMap(int (*map)[MAP_SIZE_X]) {
                 (i == (MAP_SIZE_Y - 1)) || 
                 (j == (MAP_SIZE_X - 1)) )
             {
-                map[i][j] = 1;
+                map[i][j] = TILE_WALL;
             } 
             else 
             {
-                map[i][j] = 0;
+                map[i][j] = TILE_EMPTY;
             }
         }
     }
 }
 
-static inline void draw(const int (*map)[MAP_SIZE_X], const Snake *snake, const Food *food) {  
+static inline void draw(const char (*map)[MAP_SIZE_X], const Snake *snake, const Food *food) {  
+    char screen[MAP_SIZE_Y][MAP_SIZE_X];
+
     for (int i = 0; i < MAP_SIZE_Y; i++) {
         for (int j = 0; j < MAP_SIZE_X; j++) {
-            bool printed = false;
-            
-            for (int k = 0; k < snake->length; k++) {
-                if(i == snake->body[k].coord_y && j == snake->body[k].coord_x) {
-                    printf("%d", TILE_SNAKE);
-                    printed = true;
-                    break;
-                }
-            }
-            
-            if(!printed && i == food->coord_y && j == food->coord_x) {
-                printf("%d", TILE_FOOD);
-                printed = true;
-            }
-            
-            if(!printed)
-            {
-                printf("%d", map[i][j]);
-            }
+            screen[i][j] = map[i][j];
+        }
+    }
+
+    for (int k = 0; k < snake->length; k++) {
+            screen[snake->body[k].coord_y][snake->body[k].coord_x] = TILE_SNAKE;
+    }
+    
+    screen[food->coord_y][food->coord_x] = TILE_FOOD;
+
+    for (int i = 0; i < MAP_SIZE_Y; i++) {
+        for (int j = 0; j < MAP_SIZE_X; j++) {
+            printf("%c", screen[i][j]);
         }
         printf("\n");
     }
+    // for (int i = 0; i < MAP_SIZE_Y; i++) {
+    //     for (int j = 0; j < MAP_SIZE_X; j++) {
+    //         bool printed = false;
+            
+    //         for (int k = 0; k < snake->length; k++) {
+    //             if(i == snake->body[k].coord_y && j == snake->body[k].coord_x) {
+    //                 printf("%c", TILE_SNAKE);
+    //                 printed = true;
+    //                 break;
+    //             }
+    //         }
+            
+    //         if(!printed && i == food->coord_y && j == food->coord_x) {
+    //             printf("%c", TILE_FOOD);
+    //             printed = true;
+    //         }
+            
+    //         if(!printed)
+    //         {
+    //             printf("%c", map[i][j]);
+    //         }
+    //     }
+    //     printf("\n");
+    // }
 }
 
 static inline void checkRules(Snake *snake, Food *food, GameState *state, int *points) {
@@ -173,15 +205,39 @@ static inline void checkInput(Snake *snake) {
         int c = _getch();
         if (c == 0 || c == 0xE0) {
             c = _getch();
-            if (c == 72 && snake->direction != DOWN) snake->direction = UP;
-            if (c == 80 && snake->direction != UP) snake->direction = DOWN; 
-            if (c == 75 && snake->direction != RIGHT) snake->direction = LEFT; 
-            if (c == 77 && snake->direction != LEFT) snake->direction = RIGHT; 
+            if (c == 72 && snake->nextDirection != DOWN) {
+                snake->nextDirection = UP; 
+                return;
+            }
+            if (c == 80 && snake->nextDirection != UP) { 
+                snake->nextDirection = DOWN; 
+                return;
+            }
+            if (c == 75 && snake->nextDirection != RIGHT) { 
+                snake->nextDirection = LEFT; 
+                return;
+            }
+            if (c == 77 && snake->nextDirection != LEFT) { 
+                snake->nextDirection = RIGHT;
+                return;
+            }
         } else {                            
-            if ((c == 'w' || c == 'W') && snake->direction != DOWN) snake->direction = UP;
-            if ((c == 's' || c == 'S') && snake->direction != UP) snake->direction = DOWN;
-            if ((c == 'a' || c == 'A') && snake->direction != RIGHT) snake->direction = LEFT;
-            if ((c == 'd' || c == 'D') && snake->direction != LEFT) snake->direction = RIGHT;
+            if ((c == 'w' || c == 'W') && snake->nextDirection != DOWN) {
+                snake->nextDirection = UP;
+                return;
+            }
+            if ((c == 's' || c == 'S') && snake->nextDirection != UP) { 
+                snake->nextDirection = DOWN;
+                return;
+            }
+            if ((c == 'a' || c == 'A') && snake->nextDirection != RIGHT) { 
+                snake->nextDirection = LEFT;
+                return;
+            }
+            if ((c == 'd' || c == 'D') && snake->nextDirection != LEFT) { 
+                snake->nextDirection = RIGHT;
+                return;
+            }
         }
     }
 }
@@ -189,7 +245,7 @@ static inline void checkInput(Snake *snake) {
 int main() {
     srand(time(NULL));  
     
-    int map[MAP_SIZE_Y][MAP_SIZE_X];
+    char map[MAP_SIZE_Y][MAP_SIZE_X];
     
     Food food;
     food.is_eaten = true;
@@ -201,6 +257,7 @@ int main() {
     snake.length = STARTING_LENGTH;
     snake.capacity = (MAP_SIZE_Y - 2) * (MAP_SIZE_X - 2);
     snake.direction = UP;
+    snake.nextDirection = snake.direction;
     snake.body = (Snake_coord *)malloc(snake.capacity * sizeof(Snake_coord));
 
     if (snake.body == NULL) {
@@ -214,15 +271,16 @@ int main() {
     }
     
     createMap(map);
-    spawnFood(&food, &snake);
+    spawnFood(&food, &snake, &state);
     
     while(state == PLAYING) {
         clearScreen();
         checkInput(&snake);   
         moveSnake(&snake);
         checkRules(&snake, &food, &state, &points);        
-        spawnFood(&food, &snake);
+        spawnFood(&food, &snake, &state);
         draw(map, &snake, &food);
+        
         Sleep(100);
     }
 
