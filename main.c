@@ -4,24 +4,30 @@
 #include <conio.h>
 #include <stdbool.h>
 #include <windows.h>
+// #include "snake.c"
+// #include "snake.h"
 
-#define MAP_SIZE_X 21
-#define MAP_SIZE_Y 21
+// #include "food.c"
+// #include "food.h"
 
-#define STARTING_LENGTH 3
+// #include "map.c"
+// #include "map.h"
 
 #define TILE_WALL '#'
 #define TILE_EMPTY ' '
 #define TILE_SNAKE 'O'
 #define TILE_FOOD '*'
 
+#define MAP_SIZE_X 21
+#define MAP_SIZE_Y 21
 
-typedef enum {
-    MENU,
-    PLAYING,
-    PAUSED,
-    GAMEOVER
-} GameState;
+typedef struct {
+    int coord_x;
+    int coord_y;
+    bool is_eaten;
+} Food;
+
+#define STARTING_LENGTH 3
 
 typedef enum {
     RIGHT,
@@ -44,11 +50,12 @@ typedef struct {
     Snake_coord *body;
 } Snake;
 
-typedef struct {
-    int coord_x;
-    int coord_y;
-    bool is_eaten;
-} Food;
+typedef enum {
+    MENU,
+    PLAYING,
+    PAUSED,
+    GAMEOVER
+} GameState;
 
 void clearScreen() {
     COORD cursorPosition = {0, 0};
@@ -218,35 +225,46 @@ static inline void checkInput(Snake *snake) {
     }
 }
 
-int main() {
-    srand(time(NULL));  
-    
-    char map[MAP_SIZE_Y][MAP_SIZE_X];
-    
-    Food food;
-    food.is_eaten = true;
-    
-    GameState state = PLAYING;
-    int points = 0;
+static inline void initializeSnake(Snake *snake) { 
+    snake->length = STARTING_LENGTH;
+    snake->capacity = (MAP_SIZE_Y - 2) * (MAP_SIZE_X - 2);
+    snake->direction = UP;
+    snake->nextDirection = snake->direction;
+    snake->body = (Snake_coord *)malloc(snake->capacity * sizeof(Snake_coord));
 
-    Snake snake;   
-    snake.length = STARTING_LENGTH;
-    snake.capacity = (MAP_SIZE_Y - 2) * (MAP_SIZE_X - 2);
-    snake.direction = UP;
-    snake.nextDirection = snake.direction;
-    snake.body = (Snake_coord *)malloc(snake.capacity * sizeof(Snake_coord));
-
-    if (snake.body == NULL) {
+    if (snake->body == NULL) {
         printf("Allocation Failed");
         exit(EXIT_FAILURE);
     }
 
-    for(int i = 0; i < snake.length; i++) {
-        snake.body[i].coord_x = (MAP_SIZE_X/2) - i;
-        snake.body[i].coord_y = (MAP_SIZE_Y/2);
+    for(int i = 0; i < snake->length; i++) {
+        snake->body[i].coord_x = (MAP_SIZE_X/2) - i;
+        snake->body[i].coord_y = (MAP_SIZE_Y/2);
     }
+}
+
+static inline void initializeFood(Food *food) {
+    food->is_eaten = true;
+}
+
+static inline void destroySnake(Snake *snake) {
+    free(snake->body);
+}
+
+int main() {
+    srand(time(NULL));  
     
+    GameState state = PLAYING;
+    int points = 0;
+
+    Snake snake;
+    initializeSnake(&snake);
+    
+    char map[MAP_SIZE_Y][MAP_SIZE_X];
     createMap(map);
+
+    Food food;
+    initializeFood(&food);
     spawnFood(&food, &snake, &state);
     
     while(state == PLAYING) {
@@ -255,13 +273,11 @@ int main() {
         moveSnake(&snake);
         checkRules(&snake, &food, &state, &points);        
         spawnFood(&food, &snake, &state);
-        draw(map, &snake, &food);
-        
+        draw(map, &snake, &food);    
         Sleep(100);
     }
 
     printf("Game over! \n Your points: %d", points);
-    free(snake.body);
-    
+    destroySnake(&snake); 
     return 0;
 }
