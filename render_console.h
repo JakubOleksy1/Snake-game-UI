@@ -1,0 +1,6 @@
+#ifndef RENDER_CONSOLE_H
+#define RENDER_CONSOLE_H
+
+
+
+#endif /* RENDER_CONSOLE_H */
