@@ -2,8 +2,6 @@
 #define SNAKE_H
 
 #include <stdbool.h>
-#include <windows.h>
-#include <stdio.h>
 
 #include "config.h"
 
@@ -19,7 +17,7 @@ typedef struct {
     int coord_y;
 } Snake_coord;
 
-typedef struct {
+typedef struct Snake {
     int length;
     int capacity;
     Direction direction;

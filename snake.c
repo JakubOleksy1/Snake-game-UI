@@ -1,3 +1,6 @@
+#include <windows.h>
+#include <stdio.h>
+
 #include "snake.h"
 
 void initializeSnake(Snake *snake) { 

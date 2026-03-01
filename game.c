@@ -1,4 +1,9 @@
+#include <stdbool.h>
+#include <stdio.h>
+
 #include "game.h"
+#include "input_console.h"
+#include "render_console.h"
 
 void game_init(Game *game) {
     game->state = PLAYING;
@@ -10,7 +15,9 @@ void game_init(Game *game) {
 
     initializeFood(&game->food);
     
-    spawnFood(game);
+    if (!spawnFood(&game->food, &game->snake)) {
+        game->state = GAMEOVER;
+    }
 }
 
 void game_input(Game *game) {
@@ -20,11 +27,17 @@ void game_input(Game *game) {
 void game_update(Game *game) {
     moveSnake(&game->snake);
     checkRules(game);        
-    spawnFood(game);
+    if (!spawnFood(&game->food, &game->snake)) {
+        game->state = GAMEOVER;
+    }
 }
 
 void game_render(Game *game) {
-    draw(game->map, &game->snake, &game->food);
+    draw(game);
+}
+
+void game_clearScreen() {
+    draw_clearScreen();
 }
 
 void game_gameOver_msg(Game *game) {
@@ -74,36 +87,3 @@ void checkRules(Game *game) {
     }
 }
 
-void spawnFood(Game *game) {
-    //added aliases because i did not want to edit whole function with its names.
-    Snake *snake = &game->snake;
-    Food *food = &game->food;
-    GameState *state = &game->state;
-    
-
-    if (food->is_eaten == true && snake->length < ((MAP_SIZE_Y - 2) * (MAP_SIZE_X - 2))) 
-    {   
-        int attempts = 0;
-        int maxAttempts = MAP_SIZE_X * MAP_SIZE_Y;
-        bool confirmSpawn = false;
-        while(!confirmSpawn && attempts < maxAttempts) {
-            food->coord_x = (rand() % (MAP_SIZE_X-2)) + 1;
-            food->coord_y = (rand() % (MAP_SIZE_Y-2)) + 1;
-            bool collision = false;
-                for(int i = 0; i < snake->length; i++) {
-                    if(food->coord_x == snake->body[i].coord_x && food->coord_y == snake->body[i].coord_y) {
-                        collision = true;
-                        break;
-                    }
-                }
-                if(collision == false) {
-                    confirmSpawn = true;
-                    food->is_eaten = false;
-                }
-            attempts++;
-        }
-        if(!confirmSpawn) {
-            *state = GAMEOVER;
-        }
-    }
-}

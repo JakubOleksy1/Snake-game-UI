@@ -1,11 +1,26 @@
-#include "render_console.h"
+#include <windows.h>
+#include <stdio.h>
 
-void draw(const char (*map)[MAP_SIZE_X], const Snake *snake, const Food *food) {  
+#include "render_console.h"
+#include "game.h"
+
+void draw_clearScreen() {
+    COORD cursorPosition = {0, 0};
+    HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    SetConsoleCursorPosition(hStdOut, cursorPosition);
+}
+
+void draw(Game *game) {  
+    Snake *snake = &game->snake;
+    Food *food = &game->food;
+    GameState *state = &game->state;
+    int *points = &game->points;
+
     char screen[MAP_SIZE_Y][MAP_SIZE_X];
 
     for (int i = 0; i < MAP_SIZE_Y; i++) {
         for (int j = 0; j < MAP_SIZE_X; j++) {
-            screen[i][j] = map[i][j];
+            screen[i][j] = game->map[i][j];
         }
     }
 

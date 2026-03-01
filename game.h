@@ -1,16 +1,10 @@
 #ifndef GAME_H
 #define GAME_H
 
-#include <stdbool.h>
-#include <stdio.h>
-#include <time.h>
-
 #include "snake.h"
 #include "food.h"
 #include "map.h"
 #include "config.h"
-#include "input_console.h"
-#include "render_console.h"
 
 typedef enum {
     MENU,
@@ -19,7 +13,7 @@ typedef enum {
     GAMEOVER
 } GameState;
 
-typedef struct {
+typedef struct Game {
     Snake snake;
     Food food;
     int points;
@@ -33,7 +27,7 @@ void game_update(Game *game);
 void game_render(Game *game);
 void game_gameOver_msg(Game *game);
 void game_end(Game *game);
-void checkRules(Game *game);        
-void spawnFood(Game *game);
+void checkRules(Game *game);   
+void game_clearScreen();     
 
 #endif /* GAME_H */

@@ -9,6 +9,9 @@ typedef struct {
     bool is_eaten;
 } Food;
 
+struct Snake;
+
 void initializeFood(Food *food);
+bool spawnFood(Food *food, const struct Snake *snake);
 
 #endif /* FOOD_H */
