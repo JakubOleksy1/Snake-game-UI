@@ -1,9 +1,12 @@
 #ifndef SNAKE_H
 #define SNAKE_H
 
-#include "config.h"
 #include <stdbool.h>
 #include <windows.h>
+#include <stdio.h>
+
+#include "config.h"
+
 typedef enum {
     RIGHT,
     DOWN,

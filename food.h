@@ -2,6 +2,7 @@
 #define FOOD_H
 
 #include <stdbool.h>
+
 typedef struct {
     int coord_x;
     int coord_y;

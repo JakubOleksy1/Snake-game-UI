@@ -75,7 +75,6 @@ void checkRules(Game *game) {
 }
 
 void spawnFood(Game *game) {
-    
     //added aliases because i did not want to edit whole function with its names.
     Snake *snake = &game->snake;
     Food *food = &game->food;
