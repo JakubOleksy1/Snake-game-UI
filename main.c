@@ -9,15 +9,28 @@
 
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 typedef struct {
     SDL_Window *window;
     SDL_Renderer *renderer;
+    SDL_Texture *background;
 } SdlHandler;
 
+bool load_media(SdlHandler *sdl) {
+    sdl->background = IMG_LoadTexture(sdl->renderer, "images/background.png");
+
+    if(!sdl->background) {
+        fprintf(stderr, "Error creating texture.\n Error message: %s\n", IMG_GetError());
+        return true;
+    }
+    return false;
+}
 
 void sdl_cleanUp(SdlHandler *sdl, int exit_status) {
+    SDL_DestroyTexture(sdl->background);
     SDL_DestroyRenderer(sdl->renderer);
     SDL_DestroyWindow(sdl->window);
+    IMG_Quit();
     SDL_Quit();
     exit(exit_status);
 }
@@ -25,6 +38,12 @@ void sdl_cleanUp(SdlHandler *sdl, int exit_status) {
 bool sdl_initialize(SdlHandler *sdl) {
     if(SDL_Init(SDL_INIT_EVERYTHING != 0)) {
         fprintf(stderr, "Error initializing SDL.\n Error message: %s\n", SDL_GetError());
+        return true;
+    }
+
+    int img_init = IMG_Init(IMAGE_FLAGS);
+    if((img_init & IMAGE_FLAGS) != IMAGE_FLAGS) {
+        fprintf(stderr, "Error initializing SDL_image.\n Error message: %s\n", IMG_GetError());
         return true;
     }
 
@@ -57,14 +76,17 @@ int main(int argc, char *argv[]) {
 
     SdlHandler sdl = {
         .window = NULL,
-        .renderer = NULL
+        .renderer = NULL,
+        .background = NULL
     };
 
     if(sdl_initialize(&sdl)) {
         sdl_cleanUp(&sdl, EXIT_FAILURE);
-        exit(1);
     }
 
+    if(load_media(&sdl)) {
+        sdl_cleanUp(&sdl, EXIT_FAILURE);
+    }
     // game_init(&game);
     
     while(true) {
@@ -72,13 +94,13 @@ int main(int argc, char *argv[]) {
         SDL_Event event;
 
         while(SDL_PollEvent(&event)) {
-            switch (event.type) {    
+            switch(event.type) {    
                 case SDL_QUIT:
                     sdl_cleanUp(&sdl, EXIT_SUCCESS);
                     break;
                 
                 case SDL_KEYDOWN:
-                    switch (event.key.keysym.scancode) {
+                    switch(event.key.keysym.scancode) {
                         case SDL_SCANCODE_ESCAPE:
                             sdl_cleanUp(&sdl, EXIT_SUCCESS);
                             break;
@@ -86,12 +108,14 @@ int main(int argc, char *argv[]) {
                         default:
                             break;
                     }
-                    
+
                 default:
                     break;
             }
         }
         SDL_RenderClear(sdl.renderer);
+
+        SDL_RenderCopy(sdl.renderer, sdl.background, NULL, NULL);
 
         SDL_RenderPresent(sdl.renderer);
 
