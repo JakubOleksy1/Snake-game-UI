@@ -67,19 +67,46 @@ int main(int argc, char *argv[]) {
 
     // game_init(&game);
     
-    // while(game.state == PLAYING) {
+    while(true) {
+
+        SDL_Event event;
+
+        while(SDL_PollEvent(&event)) {
+            switch (event.type) {    
+                case SDL_QUIT:
+                    sdl_cleanUp(&sdl, EXIT_SUCCESS);
+                    break;
+                
+                case SDL_KEYDOWN:
+                    switch (event.key.keysym.scancode) {
+                        case SDL_SCANCODE_ESCAPE:
+                            sdl_cleanUp(&sdl, EXIT_SUCCESS);
+                            break;
+
+                        default:
+                            break;
+                    }
+                    
+                default:
+                    break;
+            }
+        }
+        SDL_RenderClear(sdl.renderer);
+
+        SDL_RenderPresent(sdl.renderer);
+
+        SDL_Delay(16);
+    }
+
+    //while(game.state == PLAYING) {
     //     game_clearScreen(); 
     //     game_input(&game);
     //     game_update(&game);
     //     game_render(&game);
     //     Sleep(100);
-    // }
+    //}
     // game_gameOver_msg(&game);
     // game_end(&game); 
-    SDL_RenderClear(sdl.renderer);
-
-    SDL_RenderPresent(sdl.renderer);
-    SDL_Delay(5000);
     sdl_cleanUp(&sdl, EXIT_SUCCESS);
     return 0;
 }
