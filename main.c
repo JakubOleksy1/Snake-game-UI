@@ -4,36 +4,82 @@
 #include <time.h>
 
 #include "game.h"
+//#include "sdl_screen.h"
 
-bool std_initialize(SdlHandler *sdl) {
-    if(SDL_Init(SDL_INIT_EVERYTHING)) {
+
+#define SDL_MAIN_HANDLED
+#include <SDL2/SDL.h>
+typedef struct {
+    SDL_Window *window;
+    SDL_Renderer *renderer;
+} SdlHandler;
+
+
+void sdl_cleanUp(SdlHandler *sdl, int exit_status) {
+    SDL_DestroyRenderer(sdl->renderer);
+    SDL_DestroyWindow(sdl->window);
+    SDL_Quit();
+    exit(exit_status);
+}
+
+bool sdl_initialize(SdlHandler *sdl) {
+    if(SDL_Init(SDL_INIT_EVERYTHING != 0)) {
         fprintf(stderr, "Error initializing SDL.\n Error message: %s\n", SDL_GetError());
         return true;
     }
+
+    sdl->window = SDL_CreateWindow(WINDOW_TITLE, 
+                    SDL_WINDOWPOS_CENTERED, 
+                    SDL_WINDOWPOS_CENTERED, 
+                    SCREEN_WIDTH, 
+                    SCREEN_HEIGHT, 
+                    SDL_WINDOW_RESIZABLE);
+
+    if(!sdl->window) {
+        fprintf(stderr, "Error creating window.\n Error message: %s\n", SDL_GetError());
+        return true;
+    }
+
+    sdl->renderer = SDL_CreateRenderer(sdl->window, -1, 0);
+    
+    if(!sdl->renderer) {
+        fprintf(stderr, "Error creating renderer.\n Error message: %s\n", SDL_GetError());
+        return true;
+    }
+
+    return false; 
 }
 
-int main() {
-    srand(time(NULL));  
+int main(int argc, char *argv[]) {
+    //srand(time(NULL));  
     
-    Game game;
+    //Game game;
 
     SdlHandler sdl = {
         .window = NULL,
         .renderer = NULL
     };
 
-    sdl_initialize(&sdl);
-
-    game_init(&game);
-    
-    while(game.state == PLAYING) {
-        game_clearScreen(); 
-        game_input(&game);
-        game_update(&game);
-        game_render(&game);
-        Sleep(100);
+    if(sdl_initialize(&sdl)) {
+        sdl_cleanUp(&sdl, EXIT_FAILURE);
+        exit(1);
     }
-    game_gameOver_msg(&game);
-    game_end(&game); 
+
+    // game_init(&game);
+    
+    // while(game.state == PLAYING) {
+    //     game_clearScreen(); 
+    //     game_input(&game);
+    //     game_update(&game);
+    //     game_render(&game);
+    //     Sleep(100);
+    // }
+    // game_gameOver_msg(&game);
+    // game_end(&game); 
+    SDL_RenderClear(sdl.renderer);
+
+    SDL_RenderPresent(sdl.renderer);
+    SDL_Delay(5000);
+    sdl_cleanUp(&sdl, EXIT_SUCCESS);
     return 0;
 }

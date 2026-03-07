@@ -1,16 +1,10 @@
 #ifndef GAME_H
 #define GAME_H
-#include <SDL2/SDL.h>
 
 #include "snake.h"
 #include "food.h"
 #include "map.h"
 #include "config.h"
-
-typedef struct {
-    SDL_Window *window;
-    SDL_Renderer *renderer;
-} SdlHandler;
 
 typedef enum {
     MENU,
