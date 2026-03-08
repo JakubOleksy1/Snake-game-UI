@@ -4,16 +4,22 @@
 #include <time.h>
 
 #include "game.h"
-//#include "sdl_screen.h"
-
+#include "sdl_screen.h"
 
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
+
+#define TEXT_SIZE 80
 typedef struct {
     SDL_Window *window;
     SDL_Renderer *renderer;
     SDL_Texture *background;
+    TTF_Font *text_font;
+    SDL_Color text_color;
+    SDL_Rect text_rect;
+    SDL_Texture *text_image;
 } SdlHandler;
 
 bool load_media(SdlHandler *sdl) {
@@ -23,13 +29,39 @@ bool load_media(SdlHandler *sdl) {
         fprintf(stderr, "Error creating texture.\n Error message: %s\n", IMG_GetError());
         return true;
     }
+
+    sdl->text_font = TTF_OpenFont("fonts/freesansbold.ttf", TEXT_SIZE); 
+    if(!sdl->text_font) {
+        fprintf(stderr, "Error creating font.\n Error message: %s\n", TTF_GetError());
+        return true;
+    }
+
+    SDL_Surface *surface = TTF_RenderText_Blended(sdl->text_font, "HELLO", sdl->text_color);
+    if(!surface) {
+        fprintf(stderr, "Error creating surface.\n Error message: %s\n", SDL_GetError());
+        return true;
+    }
+
+    sdl->text_rect.w = surface->w;
+    sdl->text_rect.h = surface->h;
+    
+    sdl->text_image = SDL_CreateTextureFromSurface(sdl->renderer, surface);
+    SDL_FreeSurface(surface);
+    if(!sdl->text_image) {
+        fprintf(stderr, "Error creating texture.\n Error message: %s\n", SDL_GetError());
+        return true;
+    }
+    
     return false;
 }
 
 void sdl_cleanUp(SdlHandler *sdl, int exit_status) {
+    SDL_DestroyTexture(sdl->text_image);
+    TTF_CloseFont(sdl->text_font);
     SDL_DestroyTexture(sdl->background);
     SDL_DestroyRenderer(sdl->renderer);
     SDL_DestroyWindow(sdl->window);
+    TTF_Quit();
     IMG_Quit();
     SDL_Quit();
     exit(exit_status);
@@ -44,6 +76,11 @@ bool sdl_initialize(SdlHandler *sdl) {
     int img_init = IMG_Init(IMAGE_FLAGS);
     if((img_init & IMAGE_FLAGS) != IMAGE_FLAGS) {
         fprintf(stderr, "Error initializing SDL_image.\n Error message: %s\n", IMG_GetError());
+        return true;
+    }
+
+    if(TTF_Init()) {
+        fprintf(stderr, "Error initializing SDL_ttf.\n Error message: %s\n", TTF_GetError());
         return true;
     }
 
@@ -70,14 +107,18 @@ bool sdl_initialize(SdlHandler *sdl) {
 }
 
 int main(int argc, char *argv[]) {
-    //srand(time(NULL));  
+    srand(time(NULL));  
     
     //Game game;
 
     SdlHandler sdl = {
         .window = NULL,
         .renderer = NULL,
-        .background = NULL
+        .background = NULL,
+        .text_font = NULL,
+        .text_color = {255, 255, 255, 255},
+        .text_rect = {(SCREEN_WIDTH/2), (SCREEN_HEIGHT/4), 0, 0},
+        .text_image = NULL,
     };
 
     if(sdl_initialize(&sdl)) {
@@ -104,7 +145,9 @@ int main(int argc, char *argv[]) {
                         case SDL_SCANCODE_ESCAPE:
                             sdl_cleanUp(&sdl, EXIT_SUCCESS);
                             break;
-
+                /*case SDL_SCANCODE_SPACE:
+                    SDL_SetRenderDrawColor(sdl.renderer, rand() % 256,
+                                            rand() % 256, rand() % 256, 255);*/
                         default:
                             break;
                     }
@@ -116,6 +159,8 @@ int main(int argc, char *argv[]) {
         SDL_RenderClear(sdl.renderer);
 
         SDL_RenderCopy(sdl.renderer, sdl.background, NULL, NULL);
+
+        SDL_RenderCopy(sdl.renderer, sdl.text_image, NULL, &sdl.text_rect);
 
         SDL_RenderPresent(sdl.renderer);
 

@@ -1,7 +1,7 @@
 #ifndef MAP_H
 #define MAP_H
 
-#include "config.h"
+#include "game_config.h"
 
 void createMap(char (*map)[MAP_SIZE_X]);
 

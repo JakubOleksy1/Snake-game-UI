@@ -1,0 +1,9 @@
+#ifndef SCREEN_CONFIG_H
+#define SCREEN_CONFIG_H
+
+#define WINDOW_TITLE "Snake Game"
+#define SCREEN_WIDTH 600
+#define SCREEN_HEIGHT 800
+#define IMAGE_FLAGS IMG_INIT_PNG
+
+#endif /* SCREEN_CONFIG_H */

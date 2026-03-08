@@ -4,7 +4,7 @@
 #include "snake.h"
 #include "food.h"
 #include "map.h"
-#include "config.h"
+#include "game_config.h"
 
 typedef enum {
     MENU,

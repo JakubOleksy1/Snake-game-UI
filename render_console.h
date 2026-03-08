@@ -1,7 +1,7 @@
 #ifndef RENDER_CONSOLE_H
 #define RENDER_CONSOLE_H
 
-#include "config.h"
+#include "game_config.h"
 
 struct Game;
 

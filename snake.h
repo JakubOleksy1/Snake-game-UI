@@ -3,7 +3,7 @@
 
 #include <stdbool.h>
 
-#include "config.h"
+#include "game_config.h"
 
 typedef enum {
     RIGHT,
