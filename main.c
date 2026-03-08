@@ -20,7 +20,26 @@ typedef struct {
     SDL_Color text_color;
     SDL_Rect text_rect;
     SDL_Texture *text_image;
+    int text_xval;
+    int text_yval;
 } SdlHandler;
+
+void text_update(SdlHandler *sdl) {
+    sdl->text_rect.x += sdl->text_xval;
+    sdl->text_rect.y += sdl->text_yval; 
+    if(sdl->text_rect.x + sdl->text_rect.w > SCREEN_WIDTH) {
+        sdl->text_xval *= -1;
+    }
+    if(sdl->text_rect.x < 0) {
+        sdl->text_xval *= -1;
+    }
+    if(sdl->text_rect.y + sdl->text_rect.h > SCREEN_HEIGHT) {
+        sdl->text_yval *= -1;
+    }
+    if(sdl->text_rect.y < 0) {
+        sdl->text_yval *= -1;
+    }
+}
 
 bool load_media(SdlHandler *sdl) {
     sdl->background = IMG_LoadTexture(sdl->renderer, "images/background.png");
@@ -119,6 +138,8 @@ int main(int argc, char *argv[]) {
         .text_color = {255, 255, 255, 255},
         .text_rect = {(SCREEN_WIDTH/2), (SCREEN_HEIGHT/4), 0, 0},
         .text_image = NULL,
+        .text_xval = 3,
+        .text_yval = 3,
     };
 
     if(sdl_initialize(&sdl)) {
@@ -156,6 +177,9 @@ int main(int argc, char *argv[]) {
                     break;
             }
         }
+
+        text_update(&sdl);
+
         SDL_RenderClear(sdl.renderer);
 
         SDL_RenderCopy(sdl.renderer, sdl.background, NULL, NULL);
