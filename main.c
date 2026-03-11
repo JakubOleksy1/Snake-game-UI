@@ -4,14 +4,25 @@
 #include <time.h>
 
 #include "game.h"
-#include "sdl_screen.h"
+//#include "sdl_screen.h"
 
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_mixer.h>
 
+#define WINDOW_TITLE "Snake Game"
+#define SCREEN_WIDTH 600
+#define SCREEN_HEIGHT 800
+#define IMAGE_FLAGS IMG_INIT_PNG
 #define TEXT_SIZE 80
+#define MIXER_FLAGS MIX_INIT_OGG
+#define MIX_DEFAULT_FREQUENCY 44100 
+#define MIX_DEFAULT_FORMAT AUDIO_S16SYS
+#define MIX_DEFAULT_CHANNELS 2
+#define MIX_MAX_VOLUME SDL_MIX_MAXVOLUME
+
 typedef struct {
     SDL_Window *window;
     SDL_Renderer *renderer;
@@ -26,138 +37,20 @@ typedef struct {
     SDL_Rect sprite_rect;
     int sprite_vel;
     const uint8_t *keystate;
+    Mix_Chunk *soundFoodEaten;
+    Mix_Chunk *soundGameOver;
+    Mix_Music *music;
 } SdlHandler;
-
-void text_update(SdlHandler *sdl) {
-    sdl->text_rect.x += sdl->text_xval;
-    sdl->text_rect.y += sdl->text_yval; 
-    if(sdl->text_rect.x + sdl->text_rect.w > SCREEN_WIDTH) {
-        sdl->text_xval *= -1;
-    }
-    if(sdl->text_rect.x < 0) {
-        sdl->text_xval *= -1;
-    }
-    if(sdl->text_rect.y + sdl->text_rect.h > SCREEN_HEIGHT) {
-        sdl->text_yval *= -1;
-    }
-    if(sdl->text_rect.y < 0) {
-        sdl->text_yval *= -1;
-    }
-}
-
-void sprite_update(SdlHandler *sdl) {
-    if(sdl->keystate[SDL_SCANCODE_LEFT] || sdl->keystate[SDL_SCANCODE_A]) {
-        sdl->sprite_rect.x -= sdl->sprite_vel;
-    }
-    if(sdl->keystate[SDL_SCANCODE_RIGHT] || sdl->keystate[SDL_SCANCODE_D]) {
-        sdl->sprite_rect.x += sdl->sprite_vel;
-    }
-    if(sdl->keystate[SDL_SCANCODE_UP] || sdl->keystate[SDL_SCANCODE_W]) {
-        sdl->sprite_rect.y -= sdl->sprite_vel;
-    }
-    if(sdl->keystate[SDL_SCANCODE_DOWN] || sdl->keystate[SDL_SCANCODE_S]) {
-        sdl->sprite_rect.y += sdl->sprite_vel;
-    }
-}
-
-bool load_media(SdlHandler *sdl) {
-    sdl->background = IMG_LoadTexture(sdl->renderer, "images/background.png");
-
-    if(!sdl->background) {
-        fprintf(stderr, "Error creating texture.\n Error message: %s\n", IMG_GetError());
-        return true;
-    }
-
-    sdl->text_font = TTF_OpenFont("fonts/freesansbold.ttf", TEXT_SIZE); 
-    if(!sdl->text_font) {
-        fprintf(stderr, "Error creating font.\n Error message: %s\n", TTF_GetError());
-        return true;
-    }
-
-    SDL_Surface *surface = TTF_RenderText_Blended(sdl->text_font, "HELLO", sdl->text_color);
-    if(!surface) {
-        fprintf(stderr, "Error creating surface.\n Error message: %s\n", SDL_GetError());
-        return true;
-    }
-
-    sdl->text_rect.w = surface->w;
-    sdl->text_rect.h = surface->h;
-    
-    sdl->text_image = SDL_CreateTextureFromSurface(sdl->renderer, surface);
-    SDL_FreeSurface(surface);
-    if(!sdl->text_image) {
-        fprintf(stderr, "Error creating texture.\n Error message: %s\n", SDL_GetError());
-        return true;
-    }
-    
-    sdl->sprite_image = IMG_LoadTexture(sdl->renderer, "images/Snake_head_u.png");
-    if(!sdl->sprite_image) {
-        fprintf(stderr, "Error loading texture.\n Error message: %s\n", IMG_GetError());
-        return true;
-    }
-
-    if(SDL_QueryTexture(sdl->sprite_image, NULL, NULL, &sdl->sprite_rect.w, &sdl->sprite_rect.h)) {
-        fprintf(stderr, "Error querying texture.\n Error message: %s\n", SDL_GetError());
-        return true;
-    }
-    return false;
-}
-
-void sdl_cleanUp(SdlHandler *sdl, int exit_status) {
-    SDL_DestroyTexture(sdl->sprite_image);
-    SDL_DestroyTexture(sdl->text_image);
-    TTF_CloseFont(sdl->text_font);
-    SDL_DestroyTexture(sdl->background);
-    SDL_DestroyRenderer(sdl->renderer);
-    SDL_DestroyWindow(sdl->window);
-    TTF_Quit();
-    IMG_Quit();
-    SDL_Quit();
-    exit(exit_status);
-}
-
-bool sdl_initialize(SdlHandler *sdl) {
-    if(SDL_Init(SDL_INIT_EVERYTHING != 0)) {
-        fprintf(stderr, "Error initializing SDL.\n Error message: %s\n", SDL_GetError());
-        return true;
-    }
-
-    int img_init = IMG_Init(IMAGE_FLAGS);
-    if((img_init & IMAGE_FLAGS) != IMAGE_FLAGS) {
-        fprintf(stderr, "Error initializing SDL_image.\n Error message: %s\n", IMG_GetError());
-        return true;
-    }
-
-    if(TTF_Init()) {
-        fprintf(stderr, "Error initializing SDL_ttf.\n Error message: %s\n", TTF_GetError());
-        return true;
-    }
-
-    sdl->window = SDL_CreateWindow(WINDOW_TITLE, 
-                    SDL_WINDOWPOS_CENTERED, 
-                    SDL_WINDOWPOS_CENTERED, 
-                    SCREEN_WIDTH, 
-                    SCREEN_HEIGHT, 
-                    SDL_WINDOW_RESIZABLE);
-
-    if(!sdl->window) {
-        fprintf(stderr, "Error creating window.\n Error message: %s\n", SDL_GetError());
-        return true;
-    }
-
-    sdl->renderer = SDL_CreateRenderer(sdl->window, -1, 0);
-    
-    if(!sdl->renderer) {
-        fprintf(stderr, "Error creating renderer.\n Error message: %s\n", SDL_GetError());
-        return true;
-    }
-
-    return false; 
-}
+bool sdl_initialize(SdlHandler *sdl);
+void sdl_cleanUp(SdlHandler *sdl, int exit_status);
+bool load_media(SdlHandler *sdl);
+void sprite_update(SdlHandler *sdl);
+void text_update(SdlHandler *sdl);
 
 int main(int argc, char *argv[]) {
-    srand(time(NULL));  
-    
+    srand((unsigned)time(NULL));  
+    (void)argc;
+    (void)argv;
     //Game game;
 
     SdlHandler sdl = {
@@ -174,6 +67,9 @@ int main(int argc, char *argv[]) {
         .sprite_rect = {0, 0, 0, 0},
         .sprite_vel = 5,
         .keystate = SDL_GetKeyboardState(NULL),
+        .soundFoodEaten = NULL,
+        .soundGameOver = NULL,
+        .music = NULL,
     };
 
     if(sdl_initialize(&sdl)) {
@@ -184,6 +80,11 @@ int main(int argc, char *argv[]) {
         sdl_cleanUp(&sdl, EXIT_FAILURE);
     }
     // game_init(&game);
+
+    if(Mix_PlayMusic(sdl.music, -1)) {
+        fprintf(stderr, "Error playing music.\n Error message: %s\n", Mix_GetError());
+        return true;
+    }
     
     while(true) {
 
@@ -200,13 +101,30 @@ int main(int argc, char *argv[]) {
                         case SDL_SCANCODE_ESCAPE:
                             sdl_cleanUp(&sdl, EXIT_SUCCESS);
                             break;
-                /*case SDL_SCANCODE_SPACE:
-                    SDL_SetRenderDrawColor(sdl.renderer, rand() % 256,
+                        case SDL_SCANCODE_SPACE:
+                            /*SDL_SetRenderDrawColor(sdl.renderer, rand() % 256,
                                             rand() % 256, rand() % 256, 255);*/
+                            Mix_PlayChannel(-1, sdl.soundGameOver, 0);
+                            break;
+                        case SDL_SCANCODE_M:
+                            if(Mix_PausedMusic()) {
+                                Mix_ResumeMusic();
+                            } else {
+                                Mix_PauseMusic();
+                            }
+                            break;
+                        /*case SDL_SCANCODE_N:
+                            if(Mix_PausedAudio(sdl.soundFoodEaten) && Mix_PausedAudio(sdl.soundGameOver)) {
+                                Mix_ResumeAudio(sdl.soundFoodEaten);
+                                Mix_ResumeAudio(sdl.soundGameOver);
+                            } else {
+                                Mix_PauseAudio(sdl.soundFoodEaten);
+                                Mix_PauseAudio(sdl.soundGameOver);
+                            }*/
+                            break;
                         default:
                             break;
                     }
-
                 default:
                     break;
             }
@@ -240,4 +158,185 @@ int main(int argc, char *argv[]) {
     // game_end(&game); 
     sdl_cleanUp(&sdl, EXIT_SUCCESS);
     return 0;
+}
+
+
+void text_update(SdlHandler *sdl) {
+    sdl->text_rect.x += sdl->text_xval;
+    sdl->text_rect.y += sdl->text_yval; 
+    if(sdl->text_rect.x + sdl->text_rect.w > SCREEN_WIDTH) {
+        sdl->text_xval *= -1;
+        Mix_PlayChannel(-1, sdl->soundFoodEaten, 0);
+    }
+    if(sdl->text_rect.x < 0) {
+        sdl->text_xval *= -1;
+        Mix_PlayChannel(-1, sdl->soundFoodEaten, 0);
+    }
+    if(sdl->text_rect.y + sdl->text_rect.h > SCREEN_HEIGHT) {
+        sdl->text_yval *= -1;
+        Mix_PlayChannel(-1, sdl->soundFoodEaten, 0);
+    }
+    if(sdl->text_rect.y < 0) {
+        sdl->text_yval *= -1;
+        Mix_PlayChannel(-1, sdl->soundFoodEaten, 0);
+    }
+}
+
+void sprite_update(SdlHandler *sdl) {
+    if(sdl->keystate[SDL_SCANCODE_LEFT] || sdl->keystate[SDL_SCANCODE_A]) {
+        sdl->sprite_rect.x -= sdl->sprite_vel;
+    }
+    if(sdl->keystate[SDL_SCANCODE_RIGHT] || sdl->keystate[SDL_SCANCODE_D]) {
+        sdl->sprite_rect.x += sdl->sprite_vel; 
+    }
+    if(sdl->keystate[SDL_SCANCODE_UP] || sdl->keystate[SDL_SCANCODE_W]) {
+        sdl->sprite_rect.y -= sdl->sprite_vel;
+    }
+    if(sdl->keystate[SDL_SCANCODE_DOWN] || sdl->keystate[SDL_SCANCODE_S]) {
+        sdl->sprite_rect.y += sdl->sprite_vel;
+    }
+}
+
+bool load_media(SdlHandler *sdl) {
+    sdl->background = IMG_LoadTexture(sdl->renderer, "images/backgrounds/background.png");
+
+    if(!sdl->background) {
+        fprintf(stderr, "Error creating texture.\n Error message: %s\n", IMG_GetError());
+        return true;
+    }
+
+    sdl->text_font = TTF_OpenFont("fonts/freesansbold.ttf", TEXT_SIZE); 
+    if(!sdl->text_font) {
+        fprintf(stderr, "Error creating font.\n Error message: %s\n", TTF_GetError());
+        return true;
+    }
+
+    SDL_Surface *surface = TTF_RenderText_Blended(sdl->text_font, "HELLO", sdl->text_color);
+    if(!surface) {
+        fprintf(stderr, "Error creating surface.\n Error message: %s\n", SDL_GetError());
+        return true;
+    }
+
+    sdl->text_rect.w = surface->w;
+    sdl->text_rect.h = surface->h;
+    
+    sdl->text_image = SDL_CreateTextureFromSurface(sdl->renderer, surface);
+    SDL_FreeSurface(surface);
+    if(!sdl->text_image) {
+        fprintf(stderr, "Error creating texture.\n Error message: %s\n", SDL_GetError());
+        return true;
+    }
+    
+    sdl->sprite_image = IMG_LoadTexture(sdl->renderer, "images/snake/Snake_head_u.png");
+    if(!sdl->sprite_image) {
+        fprintf(stderr, "Error loading texture.\n Error message: %s\n", IMG_GetError());
+        return true;
+    }
+
+    if(SDL_QueryTexture(sdl->sprite_image, NULL, NULL, &sdl->sprite_rect.w, &sdl->sprite_rect.h)) {
+        fprintf(stderr, "Error querying texture.\n Error message: %s\n", SDL_GetError());
+        return true;
+    }
+
+    sdl->soundFoodEaten = Mix_LoadWAV("sounds/food_eaten.ogg");
+    if(!sdl->soundFoodEaten) {
+        fprintf(stderr, "Error loading sound chunk.\n Error message: %s\n", Mix_GetError());
+        return true;
+    }
+
+    sdl->soundGameOver = Mix_LoadWAV("sounds/game_over.ogg");
+    if(!sdl->soundGameOver) {
+        fprintf(stderr, "Error loading sound chunk.\n Error message: %s\n", Mix_GetError());
+        return true;
+    }
+
+    sdl->music = Mix_LoadMUS("music/background-music.ogg");
+    if(!sdl->music) {
+        fprintf(stderr, "Error loading music.\n Error message: %s\n", Mix_GetError());
+        return true;
+    }
+
+    return false;
+}
+
+void sdl_cleanUp(SdlHandler *sdl, int exit_status) {
+    Mix_HaltMusic();
+    Mix_HaltChannel(-1);
+
+    Mix_FreeMusic(sdl->music);
+    Mix_FreeChunk(sdl->soundFoodEaten);
+    Mix_FreeChunk(sdl->soundGameOver);
+    SDL_DestroyTexture(sdl->sprite_image);
+    SDL_DestroyTexture(sdl->text_image);
+    TTF_CloseFont(sdl->text_font);
+    SDL_DestroyTexture(sdl->background);
+    SDL_DestroyRenderer(sdl->renderer);
+    SDL_DestroyWindow(sdl->window);
+
+    Mix_CloseAudio();
+    Mix_Quit();
+    TTF_Quit();
+    IMG_Quit();
+    SDL_Quit();
+
+    exit(exit_status);
+}
+
+bool sdl_initialize(SdlHandler *sdl) {
+    if(SDL_Init(SDL_INIT_EVERYTHING != 0)) {
+        fprintf(stderr, "Error initializing SDL.\n Error message: %s\n", SDL_GetError());
+        return true;
+    }
+
+    int img_init = IMG_Init(IMAGE_FLAGS);
+    if((img_init & IMAGE_FLAGS) != IMAGE_FLAGS) {
+        fprintf(stderr, "Error initializing SDL_image.\n Error message: %s\n", IMG_GetError());
+        return true;
+    }
+
+    if(TTF_Init()) {
+        fprintf(stderr, "Error initializing SDL_ttf.\n Error message: %s\n", TTF_GetError());
+        return true;
+    }
+
+    int mix_init = Mix_Init(MIXER_FLAGS);
+    if((mix_init & MIXER_FLAGS) != MIXER_FLAGS) {
+        fprintf(stderr, "Error initializing SDL_mixer.\n Error message: %s\n", Mix_GetError());
+        return true;
+    }
+
+    if(Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, MIX_DEFAULT_CHANNELS, 1024)) {
+        fprintf(stderr, "Error opening audio.\n Error message: %s\n", Mix_GetError());
+        return true;
+    }
+
+    sdl->window = SDL_CreateWindow(WINDOW_TITLE, 
+                    SDL_WINDOWPOS_CENTERED, 
+                    SDL_WINDOWPOS_CENTERED, 
+                    SCREEN_WIDTH, 
+                    SCREEN_HEIGHT, 
+                    SDL_WINDOW_RESIZABLE);
+
+    if(!sdl->window) {
+        fprintf(stderr, "Error creating window.\n Error message: %s\n", SDL_GetError());
+        return true;
+    }
+
+    sdl->renderer = SDL_CreateRenderer(sdl->window, -1, 0);
+    
+    if(!sdl->renderer) {
+        fprintf(stderr, "Error creating renderer.\n Error message: %s\n", SDL_GetError());
+        return true;
+    }
+
+    SDL_Surface *icon_surf = IMG_Load("images/logo/snake-logo.png");
+    if(!icon_surf) {
+        fprintf(stderr, "Error loading surface.\n Error message: %s\n", IMG_GetError());
+        return true;
+    }
+
+    SDL_SetWindowIcon(sdl->window, icon_surf);
+    SDL_FreeSurface(icon_surf);
+
+    return false; 
 }
