@@ -23,28 +23,47 @@
 #define MIX_DEFAULT_CHANNELS 2
 #define MIX_MAX_VOLUME SDL_MIX_MAXVOLUME
 
+typedef enum {
+    START,
+    OPTIONS,
+    STOP
+} ButtonId;
+
 typedef struct {
-    SDL_Window *window;
-    SDL_Renderer *renderer;
-    SDL_Texture *background;
-    TTF_Font *text_font;
+    ButtonId id;
     SDL_Color text_color;
     SDL_Rect text_rect;
     SDL_Texture *text_image;
-    int text_xval;
-    int text_yval;
-    SDL_Texture *sprite_image;
-    SDL_Rect sprite_rect;
-    int sprite_vel;
-    const uint8_t *keystate;
+} SdlButtonS;
+
+typedef struct {
     Mix_Chunk *soundFoodEaten;
     Mix_Chunk *soundGameOver;
     Mix_Music *music;
+} SdlMusicS;
+
+typedef struct {
+    SDL_Texture *background;
+    TTF_Font *text_font;
+} SdlAssetsS;
+
+typedef struct {
+    SDL_Window *window;
+    SDL_Renderer *renderer;
+} SdlContextS;
+
+typedef struct {
+    SdlContextS context;
+    SdlAssetsS asset;
+    SdlMusicS music;
+    SdlButtonS buttons[3];
+    const uint8_t *keystate;
 } SdlHandler;
+
 bool sdl_initialize(SdlHandler *sdl);
 void sdl_cleanUp(SdlHandler *sdl, int exit_status);
 bool load_media(SdlHandler *sdl);
-void sprite_update(SdlHandler *sdl);
+//void sprite_update(SdlHandler *sdl);
 void text_update(SdlHandler *sdl);
 
 int main(int argc, char *argv[]) {
@@ -54,22 +73,28 @@ int main(int argc, char *argv[]) {
     //Game game;
 
     SdlHandler sdl = {
-        .window = NULL,
-        .renderer = NULL,
-        .background = NULL,
-        .text_font = NULL,
-        .text_color = {255, 255, 255, 255},
-        .text_rect = {(SCREEN_WIDTH/2), (SCREEN_HEIGHT/4), 0, 0},
-        .text_image = NULL,
-        .text_xval = 3,
-        .text_yval = 3,
-        .sprite_image = NULL,
-        .sprite_rect = {0, 0, 0, 0},
-        .sprite_vel = 5,
+        .context.window = NULL,
+        .context.renderer = NULL,
+        .asset.background = NULL,
+        .asset.text_font = NULL,
+        .buttons[0].text_color = {255, 255, 255, 255},
+        .buttons[0].text_rect = {(SCREEN_WIDTH/4), (SCREEN_HEIGHT/4), 0, 0},
+        .buttons[0].text_image = NULL,
+        .buttons[1].text_color = {255, 255, 255, 255},
+        .buttons[1].text_rect = {(SCREEN_WIDTH/4), (SCREEN_HEIGHT/4)+100, 0, 0},
+        .buttons[1].text_image = NULL,
+        .buttons[2].text_color = {255, 255, 255, 255},
+        .buttons[2].text_rect = {(SCREEN_WIDTH/4), (SCREEN_HEIGHT/4)+200, 0, 0},
+        .buttons[2].text_image = NULL,
+        //.text_xval = 3,
+        //.text_yval = 3,
+        //.sprite_image = NULL,
+        //.sprite_rect = {0, 0, 0, 0},
+        //.sprite_vel = 5,
         .keystate = SDL_GetKeyboardState(NULL),
-        .soundFoodEaten = NULL,
-        .soundGameOver = NULL,
-        .music = NULL,
+        .music.soundFoodEaten = NULL,
+        .music.soundGameOver = NULL,
+        .music.music = NULL,
     };
 
     if(sdl_initialize(&sdl)) {
@@ -81,7 +106,7 @@ int main(int argc, char *argv[]) {
     }
     // game_init(&game);
 
-    if(Mix_PlayMusic(sdl.music, -1)) {
+    if(Mix_PlayMusic(sdl.music.music, -1)) {
         fprintf(stderr, "Error playing music.\n Error message: %s\n", Mix_GetError());
         return true;
     }
@@ -102,9 +127,9 @@ int main(int argc, char *argv[]) {
                             sdl_cleanUp(&sdl, EXIT_SUCCESS);
                             break;
                         case SDL_SCANCODE_SPACE:
-                            /*SDL_SetRenderDrawColor(sdl.renderer, rand() % 256,
+                            /*SDL_SetRenderDrawColor(sdl.context.renderer, rand() % 256,
                                             rand() % 256, rand() % 256, 255);*/
-                            Mix_PlayChannel(-1, sdl.soundGameOver, 0);
+                            Mix_PlayChannel(-1, sdl.music.soundGameOver, 0);
                             break;
                         case SDL_SCANCODE_M:
                             if(Mix_PausedMusic()) {
@@ -130,19 +155,20 @@ int main(int argc, char *argv[]) {
             }
         }
 
-        text_update(&sdl);
+        //text_update(&sdl);
 
-        sprite_update(&sdl);
+        //sprite_update(&sdl);
 
-        SDL_RenderClear(sdl.renderer);
+        SDL_RenderClear(sdl.context.renderer);
 
-        SDL_RenderCopy(sdl.renderer, sdl.background, NULL, NULL);
+        SDL_RenderCopy(sdl.context.renderer, sdl.asset.background, NULL, NULL);
 
-        SDL_RenderCopy(sdl.renderer, sdl.text_image, NULL, &sdl.text_rect);
+        SDL_RenderCopy(sdl.context.renderer, sdl.buttons[0].text_image, NULL, &sdl.buttons[0].text_rect);
+        SDL_RenderCopy(sdl.context.renderer, sdl.buttons[1].text_image, NULL, &sdl.buttons[1].text_rect);
+        SDL_RenderCopy(sdl.context.renderer, sdl.buttons[2].text_image, NULL, &sdl.buttons[2].text_rect);
+        //SDL_RenderCopy(sdl.context.renderer, sdl.sprite_image, NULL, &sdl.sprite_rect);
 
-        SDL_RenderCopy(sdl.renderer, sdl.sprite_image, NULL, &sdl.sprite_rect);
-
-        SDL_RenderPresent(sdl.renderer);
+        SDL_RenderPresent(sdl.context.renderer);
 
         SDL_Delay(16);
     }
@@ -161,7 +187,7 @@ int main(int argc, char *argv[]) {
 }
 
 
-void text_update(SdlHandler *sdl) {
+/*void text_update(SdlHandler *sdl) {
     sdl->text_rect.x += sdl->text_xval;
     sdl->text_rect.y += sdl->text_yval; 
     if(sdl->text_rect.x + sdl->text_rect.w > SCREEN_WIDTH) {
@@ -180,9 +206,9 @@ void text_update(SdlHandler *sdl) {
         sdl->text_yval *= -1;
         Mix_PlayChannel(-1, sdl->soundFoodEaten, 0);
     }
-}
+}*/
 
-void sprite_update(SdlHandler *sdl) {
+/*void sprite_update(SdlHandler *sdl) {
     if(sdl->keystate[SDL_SCANCODE_LEFT] || sdl->keystate[SDL_SCANCODE_A]) {
         sdl->sprite_rect.x -= sdl->sprite_vel;
     }
@@ -195,39 +221,66 @@ void sprite_update(SdlHandler *sdl) {
     if(sdl->keystate[SDL_SCANCODE_DOWN] || sdl->keystate[SDL_SCANCODE_S]) {
         sdl->sprite_rect.y += sdl->sprite_vel;
     }
-}
+}*/
 
 bool load_media(SdlHandler *sdl) {
-    sdl->background = IMG_LoadTexture(sdl->renderer, "images/backgrounds/background.png");
-
-    if(!sdl->background) {
+    sdl->asset.background = IMG_LoadTexture(sdl->context.renderer, "images/backgrounds/background.png");
+    if(!sdl->asset.background) {
         fprintf(stderr, "Error creating texture.\n Error message: %s\n", IMG_GetError());
         return true;
     }
 
-    sdl->text_font = TTF_OpenFont("fonts/freesansbold.ttf", TEXT_SIZE); 
-    if(!sdl->text_font) {
+    sdl->asset.text_font = TTF_OpenFont("fonts/freesansbold.ttf", TEXT_SIZE); 
+    if(!sdl->asset.text_font) {
         fprintf(stderr, "Error creating font.\n Error message: %s\n", TTF_GetError());
         return true;
     }
 
-    SDL_Surface *surface = TTF_RenderText_Blended(sdl->text_font, "HELLO", sdl->text_color);
-    if(!surface) {
+    SDL_Surface *surface_start = TTF_RenderText_Blended(sdl->asset.text_font, "START", sdl->buttons[0].text_color);
+    if(!surface_start) {
         fprintf(stderr, "Error creating surface.\n Error message: %s\n", SDL_GetError());
         return true;
     }
 
-    sdl->text_rect.w = surface->w;
-    sdl->text_rect.h = surface->h;
+    SDL_Surface *surface_options = TTF_RenderText_Blended(sdl->asset.text_font, "OPTIONS", sdl->buttons[1].text_color);
+    if(!surface_options) {
+        fprintf(stderr, "Error creating surface.\n Error message: %s\n", SDL_GetError());
+        return true;
+    }
+
+    SDL_Surface *surface_exit = TTF_RenderText_Blended(sdl->asset.text_font, "EXIT", sdl->buttons[2].text_color);
+    if(!surface_exit) {
+        fprintf(stderr, "Error creating surface.\n Error message: %s\n", SDL_GetError());
+        return true;
+    }
+
+    sdl->buttons[0].text_rect.w = surface_start->w;
+    sdl->buttons[0].text_rect.h = surface_start->h;
+    sdl->buttons[1].text_rect.w = surface_options->w;
+    sdl->buttons[1].text_rect.h = surface_options->h;
+    sdl->buttons[2].text_rect.w = surface_exit->w;
+    sdl->buttons[2].text_rect.h = surface_exit->h;
     
-    sdl->text_image = SDL_CreateTextureFromSurface(sdl->renderer, surface);
-    SDL_FreeSurface(surface);
-    if(!sdl->text_image) {
+    sdl->buttons[0].text_image = SDL_CreateTextureFromSurface(sdl->context.renderer, surface_start);
+    sdl->buttons[1].text_image = SDL_CreateTextureFromSurface(sdl->context.renderer, surface_options);
+    sdl->buttons[2].text_image = SDL_CreateTextureFromSurface(sdl->context.renderer, surface_exit);
+    SDL_FreeSurface(surface_start);
+    if(!sdl->buttons[0].text_image) {
+        fprintf(stderr, "Error creating texture.\n Error message: %s\n", SDL_GetError());
+        return true;
+    }
+    SDL_FreeSurface(surface_options);
+    if(!sdl->buttons[1].text_image) {
+        fprintf(stderr, "Error creating texture.\n Error message: %s\n", SDL_GetError());
+        return true;
+    }
+    SDL_FreeSurface(surface_exit);
+    if(!sdl->buttons[2].text_image) {
         fprintf(stderr, "Error creating texture.\n Error message: %s\n", SDL_GetError());
         return true;
     }
     
-    sdl->sprite_image = IMG_LoadTexture(sdl->renderer, "images/snake/Snake_head_u.png");
+    /*sdl->sprite_image = IMG_LoadTexture(sdl->context.renderer, "images/snake/Snake_head_u.png");
     if(!sdl->sprite_image) {
         fprintf(stderr, "Error loading texture.\n Error message: %s\n", IMG_GetError());
         return true;
@@ -236,22 +289,22 @@ bool load_media(SdlHandler *sdl) {
     if(SDL_QueryTexture(sdl->sprite_image, NULL, NULL, &sdl->sprite_rect.w, &sdl->sprite_rect.h)) {
         fprintf(stderr, "Error querying texture.\n Error message: %s\n", SDL_GetError());
         return true;
-    }
+    }*/
 
-    sdl->soundFoodEaten = Mix_LoadWAV("sounds/food_eaten.ogg");
-    if(!sdl->soundFoodEaten) {
+    sdl->music.soundFoodEaten = Mix_LoadWAV("sounds/food_eaten.ogg");
+    if(!sdl->music.soundFoodEaten) {
         fprintf(stderr, "Error loading sound chunk.\n Error message: %s\n", Mix_GetError());
         return true;
     }
 
-    sdl->soundGameOver = Mix_LoadWAV("sounds/game_over.ogg");
-    if(!sdl->soundGameOver) {
+    sdl->music.soundGameOver = Mix_LoadWAV("sounds/game_over.ogg");
+    if(!sdl->music.soundGameOver) {
         fprintf(stderr, "Error loading sound chunk.\n Error message: %s\n", Mix_GetError());
         return true;
     }
 
-    sdl->music = Mix_LoadMUS("music/background-music.ogg");
-    if(!sdl->music) {
+    sdl->music.music = Mix_LoadMUS("music/background-music.ogg");
+    if(!sdl->music.music) {
         fprintf(stderr, "Error loading music.\n Error message: %s\n", Mix_GetError());
         return true;
     }
@@ -263,15 +316,15 @@ void sdl_cleanUp(SdlHandler *sdl, int exit_status) {
     Mix_HaltMusic();
     Mix_HaltChannel(-1);
 
-    Mix_FreeMusic(sdl->music);
-    Mix_FreeChunk(sdl->soundFoodEaten);
-    Mix_FreeChunk(sdl->soundGameOver);
-    SDL_DestroyTexture(sdl->sprite_image);
-    SDL_DestroyTexture(sdl->text_image);
-    TTF_CloseFont(sdl->text_font);
-    SDL_DestroyTexture(sdl->background);
-    SDL_DestroyRenderer(sdl->renderer);
-    SDL_DestroyWindow(sdl->window);
+    Mix_FreeMusic(sdl->music.music);
+    Mix_FreeChunk(sdl->music.soundFoodEaten);
+    Mix_FreeChunk(sdl->music.soundGameOver);
+    //SDL_DestroyTexture(sdl->sprite_image);
+    SDL_DestroyTexture(sdl->buttons->text_image);
+    TTF_CloseFont(sdl->asset.text_font);
+    SDL_DestroyTexture(sdl->asset.background);
+    SDL_DestroyRenderer(sdl->context.renderer);
+    SDL_DestroyWindow(sdl->context.window);
 
     Mix_CloseAudio();
     Mix_Quit();
@@ -310,21 +363,21 @@ bool sdl_initialize(SdlHandler *sdl) {
         return true;
     }
 
-    sdl->window = SDL_CreateWindow(WINDOW_TITLE, 
+    sdl->context.window = SDL_CreateWindow(WINDOW_TITLE, 
                     SDL_WINDOWPOS_CENTERED, 
                     SDL_WINDOWPOS_CENTERED, 
                     SCREEN_WIDTH, 
                     SCREEN_HEIGHT, 
                     SDL_WINDOW_RESIZABLE);
 
-    if(!sdl->window) {
+    if(!sdl->context.window) {
         fprintf(stderr, "Error creating window.\n Error message: %s\n", SDL_GetError());
         return true;
     }
 
-    sdl->renderer = SDL_CreateRenderer(sdl->window, -1, 0);
+    sdl->context.renderer = SDL_CreateRenderer(sdl->context.window, -1, 0);
     
-    if(!sdl->renderer) {
+    if(!sdl->context.renderer) {
         fprintf(stderr, "Error creating renderer.\n Error message: %s\n", SDL_GetError());
         return true;
     }
@@ -335,7 +388,7 @@ bool sdl_initialize(SdlHandler *sdl) {
         return true;
     }
 
-    SDL_SetWindowIcon(sdl->window, icon_surf);
+    SDL_SetWindowIcon(sdl->context.window, icon_surf);
     SDL_FreeSurface(icon_surf);
 
     return false; 
